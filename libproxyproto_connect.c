@@ -34,8 +34,8 @@ int (*sys_connect)(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 #pragma GCC diagnostic ignored "-Wpedantic"
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 #pragma GCC diagnostic warning "-Wpedantic"
-int write_evt(int fd, int af, void *from, uint16_t port,
-              const struct sockaddr *to, socklen_t tolen);
+int write_evt(int fd, void *from, uint16_t port, const struct sockaddr *to,
+              socklen_t tolen);
 
 const char v2sig[12] = "\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A";
 
@@ -110,8 +110,8 @@ LIBPROXYPROTO_CONNECT:
     break;
   }
 
-  if (write_evt(sockfd, ((const struct sockaddr *)addr)->sa_family, buf, pport,
-                (const struct sockaddr *)addr, addrlen) < 0) {
+  if (write_evt(sockfd, buf, pport, (const struct sockaddr *)addr, addrlen) <
+      0) {
     if (debug)
       (void)fprintf(stderr,
                     "error: proxy protocol not supported for socket type\n");
@@ -126,8 +126,8 @@ LIBPROXYPROTO_DONE:
   return fd;
 }
 
-int write_evt(int fd, int af, void *from, uint16_t port,
-              const struct sockaddr *to, socklen_t tolen) {
+int write_evt(int fd, void *from, uint16_t port, const struct sockaddr *to,
+              socklen_t tolen) {
   union {
     struct {
       char line[108];
@@ -161,13 +161,13 @@ int write_evt(int fd, int af, void *from, uint16_t port,
   uint16_t size;
   ssize_t ret;
 
-  (void)tolen;
-
   (void)memcpy(hdr.v2.sig, v2sig, sizeof(hdr.v2.sig));
   hdr.v2.ver_cmd = 0x21;
 
-  switch (af) {
+  switch (((const struct sockaddr *)to)->sa_family) {
   case AF_INET:
+    if (tolen < sizeof(struct sockaddr_in))
+      return -1;
     hdr.v2.fam = 0x11;
     size = 16 + 12;
     hdr.v2.len = htons(12);
@@ -178,6 +178,8 @@ int write_evt(int fd, int af, void *from, uint16_t port,
     hdr.v2.addr.ip4.dst_port = ((const struct sockaddr_in *)to)->sin_port;
     break;
   case AF_INET6:
+    if (tolen < sizeof(struct sockaddr_in6))
+      return -1;
     hdr.v2.fam = 0x21;
     size = 16 + 36;
     hdr.v2.len = htons(36);
