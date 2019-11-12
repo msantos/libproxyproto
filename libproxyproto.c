@@ -173,13 +173,83 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
     }
   } else if (ret >= 8 && memcmp(hdr.v1.line, "PROXY", 5) == 0) {
     char *end = memchr(hdr.v1.line, '\r', (size_t)ret - 1);
+
+    char *str, *token;
+    char *saveptr;
+    int j;
+    unsigned char buf[sizeof(struct in6_addr)] = {0};
+
     if (!end || end[1] != '\n')
       return -1;                  /* partial or invalid header */
     *end = '\0';                  /* terminate the string to ease parsing */
     size = end + 2 - hdr.v1.line; /* skip header + CRLF */
-    /* parse the V1 header using favorite address parsers like inet_pton.
-     *            * return -1 upon error, or simply fall through to accept.
-     *                       */
+
+    /* PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535
+     * PROXY TCP6 ffff:f...f:ffff ffff:f...f:ffff 65535 65535
+     * PROXY UNKNOWN
+     * PROXY UNKNOWN ffff:f...f:ffff ffff:f...f:ffff 65535 65535
+     */
+    for (j = 1, str = hdr.v1.line;; j++, str = NULL) {
+      token = strtok_r(str, " ", &saveptr);
+      if (token == NULL)
+        return -1;
+
+      if (debug)
+        (void)fprintf(stderr, "v1:%d:%s\n", j, token);
+
+      switch (j) {
+      case 1:
+        /* PROXY */
+        continue;
+      case 2:
+        /* TCP4, TCP6, UNKNOWN */
+        if (strcmp(token, "UNKNOWN") == 0) {
+          goto done;
+        } else if (strcmp(token, "TCP4") == 0) {
+          if (*fromlen < sizeof(struct sockaddr_in))
+            return -1;
+          ((struct sockaddr_in *)from)->sin_family = AF_INET;
+        } else if (strcmp(token, "TCP6") == 0) {
+          if (*fromlen < sizeof(struct sockaddr_in6))
+            return -1;
+          ((struct sockaddr_in6 *)from)->sin6_family = AF_INET6;
+        } else {
+          return -1;
+        }
+        break;
+      case 3:
+        /* source address */
+        if (inet_pton(((struct sockaddr *)from)->sa_family, token, buf) < 0) {
+          return -1;
+        }
+        if (((struct sockaddr *)from)->sa_family == AF_INET) {
+          ((struct sockaddr_in *)from)->sin_addr.s_addr =
+              ((struct in_addr *)buf)->s_addr;
+        } else if (((struct sockaddr *)from)->sa_family == AF_INET6) {
+          (void)memcpy(hdr.v2.addr.ip6.src_addr, buf, 16);
+        }
+        break;
+      case 4:
+        /* destination address */
+        continue;
+      case 5:
+        /* source port */
+        if (strlen(token) > 5)
+          return -1;
+        if (((struct sockaddr *)from)->sa_family == AF_INET) {
+          ((struct sockaddr_in *)from)->sin_port = htons((uint16_t)atoi(token));
+        } else if (((struct sockaddr *)from)->sa_family == AF_INET6) {
+          ((struct sockaddr_in6 *)from)->sin6_port =
+              htons((uint16_t)atoi(token));
+        }
+        break;
+      case 6:
+        /* destination port */
+        goto done;
+      default:
+        return -1;
+      }
+    }
   } else {
     /* Wrong protocol */
     return -1;
