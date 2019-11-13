@@ -46,6 +46,14 @@ used for testing.
 : Allow connections with and without the proxy protocol header. This
   option must not be used to support untrusted clients (default: disabled).
 
+`LIBPROXYPROTO_VERSION`
+: Supported proxy protocol version (default: 3):
+
+    0: proxy protocol disabled
+    1: proxy protocol v1 only
+    2: proxy protocol v2 only
+    3: proxy protocol v1 and v2
+
 ## libproxyproto_connect
 
 `LIBPROXYPROTO_ADDR`

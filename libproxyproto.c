@@ -39,13 +39,24 @@ const char v2sig[12] = "\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A";
 
 char *debug;
 char *protocol_header_is_optional;
+int version = 3;
 
 void _init(void) {
   const char *err;
+  char *env_version;
 
   debug = getenv("LIBPROXYPROTO_DEBUG");
   protocol_header_is_optional =
       getenv("LIBPROXYPROTO_PROTOCOL_HEADER_IS_OPTIONAL");
+  env_version = getenv("LIBPROXYPROTO_VERSION");
+
+  if (env_version != NULL) {
+    version = atoi(env_version);
+    if (version > 255)
+      version = 255;
+    else if (version < 0)
+      version = 0;
+  }
 
 #pragma GCC diagnostic ignored "-Wpedantic"
   sys_accept = dlsym(RTLD_NEXT, "accept");
@@ -131,6 +142,8 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
 
   if (ret >= 16 && memcmp(&hdr.v2, v2sig, 12) == 0 &&
       (hdr.v2.ver_cmd & 0xF0) == 0x20) {
+    if (!(version & 2))
+      return -1;
     size = 16 + ntohs(hdr.v2.len);
     if (ret < size)
       return -1; /* truncated or too large header */
@@ -172,12 +185,17 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
       return -1; /* not a supported command */
     }
   } else if (ret >= 8 && memcmp(hdr.v1.line, "PROXY", 5) == 0) {
-    char *end = memchr(hdr.v1.line, '\r', (size_t)ret - 1);
+    char *end;
 
     char *str, *token;
     char *saveptr;
     int j;
     unsigned char buf[sizeof(struct in6_addr)] = {0};
+
+    if (!(version & 1))
+      return -1;
+
+    end = memchr(hdr.v1.line, '\r', (size_t)ret - 1);
 
     if (!end || end[1] != '\n')
       return -1;                  /* partial or invalid header */
