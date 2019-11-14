@@ -92,14 +92,14 @@ LIBPROXYPROTO_CONNECT:
 
   switch (((const struct sockaddr *)addr)->sa_family) {
   case AF_INET:
-    if (inet_pton(AF_INET, paddr, buf) < 0) {
+    if (inet_pton(AF_INET, paddr, buf) != 1) {
       if (debug)
         (void)fprintf(stderr, "error: invalid address\n");
       goto LIBPROXYPROTO_DONE;
     }
     break;
   case AF_INET6:
-    if (inet_pton(AF_INET6, paddr, buf) < 0) {
+    if (inet_pton(AF_INET6, paddr, buf) != 1) {
       if (debug)
         (void)fprintf(stderr, "error: invalid address\n");
       goto LIBPROXYPROTO_DONE;

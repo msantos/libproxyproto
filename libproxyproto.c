@@ -237,7 +237,7 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
         break;
       case 3:
         /* source address */
-        if (inet_pton(((struct sockaddr *)from)->sa_family, token, buf) < 0) {
+        if (inet_pton(((struct sockaddr *)from)->sa_family, token, buf) != 1) {
           return -1;
         }
         if (((struct sockaddr *)from)->sa_family == AF_INET) {
