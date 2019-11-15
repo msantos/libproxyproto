@@ -249,6 +249,9 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
         break;
       case 4:
         /* destination address */
+        if (inet_pton(((struct sockaddr *)from)->sa_family, token, buf) != 1) {
+          return -1;
+        }
         continue;
       case 5:
         /* source port */
@@ -263,6 +266,8 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
         break;
       case 6:
         /* destination port */
+        if (strlen(token) > 5)
+          return -1;
         goto done;
       default:
         return -1;
