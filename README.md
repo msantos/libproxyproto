@@ -62,6 +62,13 @@ used for testing.
 `LIBPROXYPROTO_PORT`
 : Source port (default: 1234)
 
+`LIBPROXYPROTO_VERSION`
+: Supported proxy protocol version (default: 3):
+
+    0: proxy protocol disabled
+    1: proxy protocol v1
+    2: proxy protocol v2
+
 # EXAMPLES
 
 ## netcat

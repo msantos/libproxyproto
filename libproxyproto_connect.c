@@ -36,22 +36,35 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 #pragma GCC diagnostic warning "-Wpedantic"
 int write_evt(int fd, void *from, uint16_t port, const struct sockaddr *to,
               socklen_t tolen);
+int write_v1(int fd, void *from, uint16_t port, const struct sockaddr *to,
+             socklen_t tolen);
+int write_v2(int fd, void *from, uint16_t port, const struct sockaddr *to,
+             socklen_t tolen);
 
 const char v2sig[12] = "\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A";
 
 char *debug;
 char *paddr;
 uint16_t pport;
+int version = 2;
 
 void _init(void) {
   const char *err;
   char *env_port;
+  char *env_version;
 
   debug = getenv("LIBPROXYPROTO_DEBUG");
 
   paddr = getenv("LIBPROXYPROTO_ADDR");
   if (paddr == NULL)
     paddr = "127.0.0.1";
+
+  env_version = getenv("LIBPROXYPROTO_VERSION");
+  if (env_version != NULL) {
+    version = atoi(env_version);
+    if (version < 0 || version > 2)
+      _exit(111);
+  }
 
   env_port = getenv("LIBPROXYPROTO_PORT");
   pport = htons((uint16_t)atoi(env_port ? env_port : "1234"));
@@ -128,6 +141,78 @@ LIBPROXYPROTO_DONE:
 
 int write_evt(int fd, void *from, uint16_t port, const struct sockaddr *to,
               socklen_t tolen) {
+  switch (version) {
+  case 0:
+    return 1;
+  case 1:
+    return write_v1(fd, from, port, to, tolen);
+  case 2:
+    return write_v2(fd, from, port, to, tolen);
+  default:
+    return -1;
+  }
+}
+
+int write_v1(int fd, void *from, uint16_t port, const struct sockaddr *to,
+             socklen_t tolen) {
+  char buf[108] = {0};
+  char saddr[INET6_ADDRSTRLEN] = {0};
+  char daddr[INET6_ADDRSTRLEN] = {0};
+  uint16_t size = 0;
+  ssize_t ret;
+  int rv;
+
+  switch (((const struct sockaddr *)to)->sa_family) {
+  case AF_INET:
+    if (tolen < sizeof(struct sockaddr_in))
+      return -1;
+
+    if (inet_ntop(AF_INET, &(((struct in_addr *)from)->s_addr), saddr,
+                  INET_ADDRSTRLEN) == NULL)
+      return -1;
+
+    if (inet_ntop(AF_INET, &(((const struct sockaddr_in *)to)->sin_addr.s_addr),
+                  daddr, INET_ADDRSTRLEN) == NULL)
+      return -1;
+
+    rv = snprintf(buf, sizeof(buf), "PROXY TCP4 %s %s %u %u\r\n", saddr, daddr,
+                  ntohs(port),
+                  ntohs(((const struct sockaddr_in *)to)->sin_port));
+
+    break;
+  case AF_INET6:
+    if (tolen < sizeof(struct sockaddr_in6))
+      return -1;
+
+    if (inet_ntop(AF_INET6, from, saddr, INET6_ADDRSTRLEN) == NULL)
+      return -1;
+
+    if (inet_ntop(AF_INET6, &((const struct sockaddr_in6 *)to)->sin6_addr,
+                  daddr, INET6_ADDRSTRLEN) == NULL)
+      return -1;
+
+    rv = snprintf(buf, sizeof(buf), "PROXY TCP6 %s %s %u %u\r\n", saddr, daddr,
+                  ntohs(port),
+                  ntohs(((const struct sockaddr_in6 *)to)->sin6_port));
+
+    break;
+  default:
+    return -1;
+  }
+
+  if (rv <= 0 || rv > (int)sizeof(buf))
+    return -1;
+
+  size = (uint16_t)rv;
+
+  while ((ret = write(fd, buf, size)) == -1 && errno == EINTR)
+    ;
+
+  return ret == size ? 1 : -1;
+}
+
+int write_v2(int fd, void *from, uint16_t port, const struct sockaddr *to,
+             socklen_t tolen) {
   union {
     struct {
       char line[108];
