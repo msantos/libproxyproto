@@ -28,6 +28,8 @@
 
 #include <unistd.h>
 
+#include "strtonum.h"
+
 void _init(void);
 int (*sys_accept)(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -191,6 +193,7 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
     char *saveptr;
     int j;
     unsigned char buf[sizeof(struct in6_addr)] = {0};
+    uint16_t port;
 
     if (!(version & 1))
       return -1;
@@ -255,18 +258,22 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
         continue;
       case 5:
         /* source port */
-        if (strlen(token) > 5)
+        errno = 0;
+        port = (uint16_t)strtonum(token, 0, UINT16_MAX, NULL);
+        if (errno)
           return -1;
+
         if (((struct sockaddr *)from)->sa_family == AF_INET) {
-          ((struct sockaddr_in *)from)->sin_port = htons((uint16_t)atoi(token));
+          ((struct sockaddr_in *)from)->sin_port = htons(port);
         } else if (((struct sockaddr *)from)->sa_family == AF_INET6) {
-          ((struct sockaddr_in6 *)from)->sin6_port =
-              htons((uint16_t)atoi(token));
+          ((struct sockaddr_in6 *)from)->sin6_port = htons(port);
         }
         break;
       case 6:
         /* destination port */
-        if (strlen(token) > 5)
+        errno = 0;
+        port = (uint16_t)strtonum(token, 0, UINT16_MAX, NULL);
+        if (errno)
           return -1;
         goto done;
       default:

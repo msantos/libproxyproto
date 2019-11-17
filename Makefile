@@ -7,7 +7,7 @@ libproxyproto:
 		-Wconversion -Wshadow \
 		-Wpointer-arith -Wcast-qual \
 		-Wstrict-prototypes -Wmissing-prototypes \
-	 	-o $@.so $@.c -ldl \
+	 	-o $@.so $@.c strtonum.c -ldl \
 	 	-Wl,-z,relro,-z,now -Wl,-z,noexecstack
 
 libproxyproto_connect:
