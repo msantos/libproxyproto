@@ -144,8 +144,6 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
 
   if (ret >= 16 && memcmp(&hdr.v2, v2sig, 12) == 0 &&
       (hdr.v2.ver_cmd & 0xF0) == 0x20) {
-    if (!(version & 2))
-      return -1;
     size = 16 + ntohs(hdr.v2.len);
     if (ret < size)
       return -1; /* truncated or too large header */
@@ -156,6 +154,8 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
       case 0x11: /* TCPv4 */
         if (*fromlen < sizeof(struct sockaddr_in))
           return -1;
+        if (!(version & 2))
+          goto done;
         if (debug)
           (void)fprintf(stderr, "*** orig addr=%s:%u\n",
                         inet_ntoa(((struct sockaddr_in *)from)->sin_addr),
@@ -195,15 +195,16 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
     unsigned char buf[sizeof(struct in6_addr)] = {0};
     uint16_t port;
 
-    if (!(version & 1))
-      return -1;
-
     end = memchr(hdr.v1.line, '\r', (size_t)ret - 1);
 
     if (!end || end[1] != '\n')
-      return -1;                  /* partial or invalid header */
+      return -1; /* partial or invalid header */
+
     *end = '\0';                  /* terminate the string to ease parsing */
     size = end + 2 - hdr.v1.line; /* skip header + CRLF */
+
+    if (!(version & 1))
+      goto done;
 
     /* PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535
      * PROXY TCP6 ffff:f...f:ffff ffff:f...f:ffff 65535 65535
