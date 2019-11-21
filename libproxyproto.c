@@ -273,7 +273,7 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
       case 6:
         /* destination port */
         errno = 0;
-        port = (uint16_t)strtonum(token, 0, UINT16_MAX, NULL);
+        (void)strtonum(token, 0, UINT16_MAX, NULL);
         if (errno)
           return -1;
         goto done;

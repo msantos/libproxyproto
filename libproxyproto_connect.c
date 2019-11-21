@@ -81,7 +81,7 @@ void _init(void) {
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
   int fd;
   int oflags;
-  int nflags;
+  int nflags = 0;
   unsigned char buf[sizeof(struct in6_addr)];
 
   oflags = fcntl(sockfd, F_GETFL);
