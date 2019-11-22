@@ -132,9 +132,6 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
 
   ssize_t size, ret;
 
-  if (from == NULL)
-    return 1;
-
   do {
     ret = recv(fd, &hdr, sizeof(hdr), MSG_PEEK);
   } while (ret == -1 && errno == EINTR);
@@ -148,14 +145,15 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
     if (ret < size)
       return -1; /* truncated or too large header */
 
+    if (from == NULL || !(version & 2))
+      goto done;
+
     switch (hdr.v2.ver_cmd & 0xF) {
     case 0x01: /* PROXY command */
       switch (hdr.v2.fam) {
       case 0x11: /* TCPv4 */
         if (*fromlen < sizeof(struct sockaddr_in))
           return -1;
-        if (!(version & 2))
-          goto done;
         if (debug)
           (void)fprintf(stderr, "*** orig addr=%s:%u\n",
                         inet_ntoa(((struct sockaddr_in *)from)->sin_addr),
@@ -203,7 +201,7 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
     *end = '\0';                  /* terminate the string to ease parsing */
     size = end + 2 - hdr.v1.line; /* skip header + CRLF */
 
-    if (!(version & 1))
+    if (from == NULL || !(version & 1))
       goto done;
 
     /* PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535
