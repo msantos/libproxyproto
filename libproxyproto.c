@@ -30,6 +30,11 @@
 
 #include "strtonum.h"
 
+enum {
+  LIBPROXYPROTO_V1 = (1 << 0),
+  LIBPROXYPROTO_V2 = (1 << 1),
+};
+
 void _init(void);
 int (*sys_accept)(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 #pragma GCC diagnostic ignored "-Wpedantic"
@@ -41,7 +46,7 @@ const char v2sig[12] = "\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A";
 
 char *debug;
 char *protocol_header_is_optional;
-int version = 3;
+int version = LIBPROXYPROTO_V1 | LIBPROXYPROTO_V2;
 
 void _init(void) {
   const char *err;
@@ -145,7 +150,7 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
     if (ret < size)
       return -1; /* truncated or too large header */
 
-    if (from == NULL || !(version & 2))
+    if (from == NULL || !(version & LIBPROXYPROTO_V2))
       goto done;
 
     switch (hdr.v2.ver_cmd & 0xF) {
@@ -201,7 +206,7 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
     *end = '\0';                  /* terminate the string to ease parsing */
     size = end + 2 - hdr.v1.line; /* skip header + CRLF */
 
-    if (from == NULL || !(version & 1))
+    if (from == NULL || !(version & LIBPROXYPROTO_V1))
       goto done;
 
     /* PROXY TCP4 255.255.255.255 255.255.255.255 65535 65535
