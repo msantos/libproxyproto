@@ -18,27 +18,29 @@ libproxyproto provides a method for applications to discover the original
 client IP adddress and port of proxied connections. The application must
 be dynamically linked.
 
-The intermediary proxies add a binary protocol header before the
-application data using proxy protocol v2:
+Intermediary proxies add a binary protocol header before the application
+data using the proxy protocol:
 
     https://github.com/haproxy/haproxy/blob/master/doc/proxy-protocol.txt
+
+Both proxy proxy protocol v1 and v2 are supported.
 
 When the connection is `accept(2)`'ed, libproxyproto:
 
 * intercepts the call to `accept(2)`
 * reads the proxy protocol header
-* sets the source IP address and port in `struct sockaddr` argument of
+* sets the source IP address and port in the `struct sockaddr` argument of
   `accept(2)`
 
-libproxyproto\_connect does the same thing for `connect(2)` and can be
-used for testing.
+libproxyproto\_connect does the same thing for calls to `connect(2)`
+and can be used for testing.
 
 # ENVIRONMENT VARIABLES
 
 ## common
 
 `LIBPROXYPROTO_DEBUG`
-: Write errors to stdout (default: disabled).
+: Write errors to stderr (default: disabled).
 
 ## libproxyproto
 
@@ -86,6 +88,8 @@ LD_PRELOAD=libproxyproto_connect.so \
 ## haproxy.conf
 
 ```
+# test haproxy
+# server: LD_PRELOAD=libproxyproto.so nc -vvvv -k -l 9090
 defaults
     mode tcp
     timeout connect 4s
@@ -93,8 +97,8 @@ defaults
     timeout server 30s
 
 listen example
-    bind <ipaddr>:8080
-    server test <ipaddr>:8080 send-proxy-v2
+    bind :8080
+    server test 127.0.0.1:9090 send-proxy-v2
 ```
 
 # ALTERNATIVES
