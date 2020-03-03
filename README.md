@@ -62,7 +62,7 @@ and can be used for testing.
 : Source IP address (default: 127.0.0.1)
 
 `LIBPROXYPROTO_PORT`
-: Source port (default: 1234)
+: Source port (default: 8080)
 
 `LIBPROXYPROTO_VERSION`
 : Supported proxy protocol version (default: 3):

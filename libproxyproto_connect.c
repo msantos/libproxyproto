@@ -67,7 +67,7 @@ void _init(void) {
   }
 
   env_port = getenv("LIBPROXYPROTO_PORT");
-  pport = htons((uint16_t)atoi(env_port ? env_port : "1234"));
+  pport = htons((uint16_t)atoi(env_port ? env_port : "8080"));
 
 #pragma GCC diagnostic ignored "-Wpedantic"
   sys_connect = dlsym(RTLD_NEXT, "connect");
