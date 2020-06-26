@@ -65,7 +65,7 @@ and can be used for testing.
 : Source port (default: 8080)
 
 `LIBPROXYPROTO_VERSION`
-: Supported proxy protocol version (default: 3):
+: Supported proxy protocol version (default: 2):
 
     0: proxy protocol disabled
     1: proxy protocol v1
