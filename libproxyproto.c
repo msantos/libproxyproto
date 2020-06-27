@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, Michael Santos <michael.santos@gmail.com>
+/* Copyright (c) 2019-2020, Michael Santos <michael.santos@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -193,7 +193,7 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen) {
     char *end;
 
     char *str, *token;
-    char *saveptr;
+    char *saveptr = NULL;
     int j;
     unsigned char buf[sizeof(struct in6_addr)] = {0};
     uint16_t port;
