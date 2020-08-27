@@ -86,16 +86,15 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
 
   oflags = fcntl(sockfd, F_GETFL);
   if (oflags < 0)
-    goto LIBPROXYPROTO_CONNECT;
+    return -1;
 
   nflags = oflags & ~O_NONBLOCK;
 
   if (oflags != nflags) {
     if (fcntl(sockfd, F_SETFL, nflags) < 0)
-      goto LIBPROXYPROTO_CONNECT;
+      return -1;
   }
 
-LIBPROXYPROTO_CONNECT:
   fd = sys_connect(sockfd, addr, addrlen);
   if (fd < 0)
     return fd;
