@@ -45,7 +45,7 @@ int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen);
 const char v2sig[12] = "\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A";
 
 char *debug;
-char *protocol_header_is_optional;
+char *must_use_protocol_header;
 int version = LIBPROXYPROTO_V1 | LIBPROXYPROTO_V2;
 
 void _init(void) {
@@ -53,8 +53,7 @@ void _init(void) {
   char *env_version;
 
   debug = getenv("LIBPROXYPROTO_DEBUG");
-  protocol_header_is_optional =
-      getenv("LIBPROXYPROTO_PROTOCOL_HEADER_IS_OPTIONAL");
+  must_use_protocol_header = getenv("LIBPROXYPROTO_MUST_USE_PROTOCOL_HEADER");
   env_version = getenv("LIBPROXYPROTO_VERSION");
 
   if (env_version != NULL) {
@@ -88,7 +87,7 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
     if (debug)
       (void)fprintf(stderr, "error: not proxy protocol\n");
 
-    if (protocol_header_is_optional)
+    if (!must_use_protocol_header)
       goto LIBPROXYPROTO_DONE;
 
     if (debug)

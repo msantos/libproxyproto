@@ -44,9 +44,10 @@ and can be used for testing.
 
 ## libproxyproto
 
-`LIBPROXYPROTO_PROTOCOL_HEADER_IS_OPTIONAL`
-: Allow connections with and without the proxy protocol header. This
-  option must not be used to support untrusted clients (default: disabled).
+`LIBPROXYPROTO_MUST_USE_PROTOCOL_HEADER`
+: By default, connections without the proxy protocol header are
+  allowed. Enabling this option drops connections without a protocol header
+  (default: disabled).
 
 `LIBPROXYPROTO_VERSION`
 : Supported proxy protocol version (default: 3):
