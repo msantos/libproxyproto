@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, Michael Santos <michael.santos@gmail.com>
+/* Copyright (c) 2019-2021, Michael Santos <michael.santos@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -37,8 +37,11 @@ enum {
 
 void _init(void);
 int (*sys_accept)(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+int (*sys_accept4)(int sockfd, struct sockaddr *addr, socklen_t *addrlen,
+                   int flags);
 #pragma GCC diagnostic ignored "-Wpedantic"
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
 #pragma GCC diagnostic warning "-Wpedantic"
 int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen);
 
@@ -66,6 +69,7 @@ void _init(void) {
 
 #pragma GCC diagnostic ignored "-Wpedantic"
   sys_accept = dlsym(RTLD_NEXT, "accept");
+  sys_accept4 = dlsym(RTLD_NEXT, "accept4");
 #pragma GCC diagnostic warning "-Wpedantic"
   err = dlerror();
 
@@ -81,7 +85,36 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
     return fd;
 
   if (debug)
-    (void)fprintf(stderr, "accepted connection\n");
+    (void)fprintf(stderr, "accept: accepted connection\n");
+
+  if (read_evt(fd, addr, addrlen) <= 0) {
+    if (debug)
+      (void)fprintf(stderr, "error: not proxy protocol\n");
+
+    if (!must_use_protocol_header)
+      goto LIBPROXYPROTO_DONE;
+
+    if (debug)
+      (void)fprintf(stderr, "dropping connection\n");
+
+    (void)close(fd);
+    errno = ECONNABORTED;
+    return -1;
+  }
+
+LIBPROXYPROTO_DONE:
+  return fd;
+}
+
+int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
+  int fd;
+
+  fd = sys_accept4(sockfd, addr, addrlen, flags);
+  if (fd < 0)
+    return fd;
+
+  if (debug)
+    (void)fprintf(stderr, "accept4: accepted connection\n");
 
   if (read_evt(fd, addr, addrlen) <= 0) {
     if (debug)
