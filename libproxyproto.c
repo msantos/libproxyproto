@@ -36,20 +36,21 @@ enum {
 };
 
 void _init(void);
-int (*sys_accept)(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
-int (*sys_accept4)(int sockfd, struct sockaddr *addr, socklen_t *addrlen,
-                   int flags);
+static int (*sys_accept)(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+static int (*sys_accept4)(int sockfd, struct sockaddr *addr, socklen_t *addrlen,
+                          int flags);
 #pragma GCC diagnostic ignored "-Wpedantic"
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
 #pragma GCC diagnostic warning "-Wpedantic"
-int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen);
+static int read_evt(int fd, struct sockaddr *from, socklen_t *fromlen);
 
-const char v2sig[12] = "\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A";
+static const char v2sig[12] =
+    "\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A";
 
-char *debug;
-char *must_use_protocol_header;
-int version = LIBPROXYPROTO_V1 | LIBPROXYPROTO_V2;
+static char *debug;
+static char *must_use_protocol_header;
+static int version = LIBPROXYPROTO_V1 | LIBPROXYPROTO_V2;
 
 void _init(void) {
   const char *err;

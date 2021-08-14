@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2020, Michael Santos <michael.santos@gmail.com>
+/* Copyright (c) 2019-2021, Michael Santos <michael.santos@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -30,23 +30,25 @@
 #include <unistd.h>
 
 void _init(void);
-int (*sys_connect)(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+static int (*sys_connect)(int sockfd, const struct sockaddr *addr,
+                          socklen_t addrlen);
 #pragma GCC diagnostic ignored "-Wpedantic"
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 #pragma GCC diagnostic warning "-Wpedantic"
-int write_evt(int fd, void *from, uint16_t port, const struct sockaddr *to,
-              socklen_t tolen);
-int write_v1(int fd, void *from, uint16_t port, const struct sockaddr *to,
-             socklen_t tolen);
-int write_v2(int fd, void *from, uint16_t port, const struct sockaddr *to,
-             socklen_t tolen);
+static int write_evt(int fd, void *from, uint16_t port,
+                     const struct sockaddr *to, socklen_t tolen);
+static int write_v1(int fd, void *from, uint16_t port,
+                    const struct sockaddr *to, socklen_t tolen);
+static int write_v2(int fd, void *from, uint16_t port,
+                    const struct sockaddr *to, socklen_t tolen);
 
-const char v2sig[12] = "\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A";
+static const char v2sig[12] =
+    "\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A";
 
-char *debug;
-char *paddr;
-uint16_t pport;
-int version = 2;
+static char *debug;
+static char *paddr;
+static uint16_t pport;
+static int version = 2;
 
 void _init(void) {
   const char *err;
@@ -119,7 +121,6 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     break;
   default:
     goto LIBPROXYPROTO_DONE;
-    break;
   }
 
   if (write_evt(sockfd, buf, pport, (const struct sockaddr *)addr, addrlen) <
