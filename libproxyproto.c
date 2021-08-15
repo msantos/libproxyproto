@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/fcntl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 
@@ -109,6 +110,12 @@ LIBPROXYPROTO_DONE:
 
 int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
   int fd;
+  int nonblock;
+
+  nonblock = flags & SOCK_NONBLOCK;
+
+  if (nonblock)
+    flags &= ~SOCK_NONBLOCK;
 
   fd = sys_accept4(sockfd, addr, addrlen, flags);
   if (fd < 0)
@@ -133,6 +140,12 @@ int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
   }
 
 LIBPROXYPROTO_DONE:
+  if (nonblock) {
+    if (fcntl(fd, F_SETFL, O_NONBLOCK) == -1) {
+      (void)close(fd);
+      return -1;
+    }
+  }
   return fd;
 }
 
