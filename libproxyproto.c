@@ -44,7 +44,8 @@ static int (*sys_accept4)(int sockfd, struct sockaddr *addr, socklen_t *addrlen,
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
 #pragma GCC diagnostic warning "-Wpedantic"
-static int read_evt(int fd, struct sockaddr *from, socklen_t fromlen);
+static int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
+                    socklen_t fromlen);
 
 static const char v2sig[12] =
     "\x0D\x0A\x0D\x0A\x00\x0D\x0A\x51\x55\x49\x54\x0A";
@@ -81,6 +82,7 @@ void _init(void) {
 
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
   int fd;
+  socklen_t oaddrlen = *addrlen;
 
   fd = sys_accept(sockfd, addr, addrlen);
   if (fd < 0)
@@ -89,7 +91,7 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
   if (debug)
     (void)fprintf(stderr, "accept: accepted connection\n");
 
-  if (read_evt(fd, addr, *addrlen) <= 0) {
+  if (read_evt(fd, addr, oaddrlen, *addrlen) <= 0) {
     if (debug)
       (void)fprintf(stderr, "error: not proxy protocol\n");
 
@@ -110,6 +112,7 @@ LIBPROXYPROTO_DONE:
 
 int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
   int fd;
+  socklen_t oaddrlen = *addrlen;
   int nonblock;
 
   nonblock = flags & SOCK_NONBLOCK;
@@ -124,7 +127,7 @@ int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
   if (debug)
     (void)fprintf(stderr, "accept4: accepted connection\n");
 
-  if (read_evt(fd, addr, *addrlen) <= 0) {
+  if (read_evt(fd, addr, oaddrlen, *addrlen) <= 0) {
     if (debug)
       (void)fprintf(stderr, "error: not proxy protocol\n");
 
@@ -150,7 +153,8 @@ LIBPROXYPROTO_DONE:
 }
 
 /* returns 0 if needs to poll, <0 upon error or >0 if it did the job */
-int read_evt(int fd, struct sockaddr *from, socklen_t fromlen) {
+int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
+             socklen_t fromlen) {
   union {
     struct {
       char line[108];
@@ -203,8 +207,8 @@ int read_evt(int fd, struct sockaddr *from, socklen_t fromlen) {
     case 0x01: /* PROXY command */
       switch (hdr.v2.fam) {
       case 0x11: /* TCPv4 */
-        if (fromlen < sizeof(struct sockaddr_in))
-          return -1;
+        if (ofromlen < fromlen)
+          goto done;
         if (debug)
           (void)fprintf(stderr, "*** orig addr=%s:%u\n",
                         inet_ntoa(((struct sockaddr_in *)from)->sin_addr),
@@ -219,8 +223,8 @@ int read_evt(int fd, struct sockaddr *from, socklen_t fromlen) {
                         ntohs(((struct sockaddr_in *)from)->sin_port));
         goto done;
       case 0x21: /* TCPv6 */
-        if (fromlen < sizeof(struct sockaddr_in6))
-          return -1;
+        if (ofromlen < fromlen)
+          goto done;
         ((struct sockaddr_in6 *)from)->sin6_family = AF_INET6;
         memcpy(&((struct sockaddr_in6 *)from)->sin6_addr,
                hdr.v2.addr.ip6.src_addr, 16);
@@ -277,12 +281,12 @@ int read_evt(int fd, struct sockaddr *from, socklen_t fromlen) {
         if (strcmp(token, "UNKNOWN") == 0) {
           goto done;
         } else if (strcmp(token, "TCP4") == 0) {
-          if (fromlen < sizeof(struct sockaddr_in))
-            return -1;
+          if (ofromlen < fromlen)
+            goto done;
           ((struct sockaddr_in *)from)->sin_family = AF_INET;
         } else if (strcmp(token, "TCP6") == 0) {
-          if (fromlen < sizeof(struct sockaddr_in6))
-            return -1;
+          if (ofromlen < fromlen)
+            goto done;
           ((struct sockaddr_in6 *)from)->sin6_family = AF_INET6;
         } else {
           return -1;
