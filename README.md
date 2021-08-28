@@ -106,6 +106,88 @@ listen example
 
 * [proxyproto.nim](https://github.com/ba0f3/proxyproto.nim)
 
+# BENCHMARK
+
+To give a very rough idea of the overhead, a
+[benchmark](https://github.com/path-network/go-mmproxy/blob/master/README.md#benchmark)
+was run against an echo service.
+
+This benchmark is not meant to be conclusive:
+
+* run over the loopback
+* on an old system running many other services
+
+## Benchmark Client
+
+[tcpkali](https://github.com/satori-com/tcpkali)
+
+```
+tcpkali -c 50 -T 10s -e1 'PROXY TCP4 127.0.0.1 127.0.0.1 \{connection.uid} 25578\r\n' -m 'PING\r\n' 127.0.0.1:1122
+```
+
+## Echo Server
+
+To run:
+
+    erlc echo.erl
+
+    # no proxy: run on port 1122
+    erl -noshell -eval "echo:start()"
+
+    # libproxyproto: run on port 1122
+    LD_PRELOAD=libproxyproto.so erl -noshell -eval "echo:start()"
+
+    # go-mmproxy: run on port 1123
+    erl -noshell -eval "echo:start(1123)"
+    sudo ./go-mmproxy -l 0.0.0.0:1122 -4 127.0.0.1:1123
+
+
+``` erlang
+-module(echo).
+
+-export([start/0, start/1]).
+
+start() ->
+    start(1122).
+
+start(Port) ->
+    {ok, S} = gen_tcp:listen(Port, [
+        binary,
+        {reuseaddr, true},
+        {backlog, 1024}
+    ]),
+    accept(S).
+
+accept(LS) ->
+    {ok, S} = gen_tcp:accept(LS),
+    Pid = spawn(fun() -> recv(S) end),
+    _ = gen_tcp:controlling_process(S, Pid),
+    accept(LS).
+
+recv(S) ->
+    receive
+        {tcp, S, Data} ->
+            gen_tcp:send(S, Data),
+            recv(S);
+        {tcp_closed, S} ->
+            ok;
+        Error ->
+            error_logger:error_report([{socket, S}, {error, Error}])
+    end.
+```
+
+## Results
+
+|          | ⇅ Mbps | ↓ Mbps | ↑ Mbps |  ↓ pkt/s | ↑ pkt/s |
+|----------|---------|--------|--------|----------|---------|
+| noproxy       | 98.238 | 2455.263 | 2456.626 | 229245.6 | 210847.5 |
+| libproxyproto | 94.974 | 2373.474 | 2375.247 | 221341.9 | 203862.9 |
+| go-mmproxy    | 76.567 | 1901.043 | 1927.293 | 163515.0 | 165415.9 |
+
+Bandwidth per channel: ⇅ Mbps
+Aggregate bandwidth: ↓, ↑ Mbps
+Packet rate estimate: ↓, ↑
+
 # SEE ALSO
 
 _connect_(2), _accept_(2)
