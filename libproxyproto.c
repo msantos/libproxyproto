@@ -244,6 +244,7 @@ int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
 
     char *str, *token;
     char *saveptr = NULL;
+    const char *errstr = NULL;
     int j;
     unsigned char buf[sizeof(struct in6_addr)] = {0};
     uint16_t port;
@@ -312,9 +313,8 @@ int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
         continue;
       case 5:
         /* source port */
-        errno = 0;
-        port = (uint16_t)strtonum(token, 0, UINT16_MAX, NULL);
-        if (errno)
+        port = (uint16_t)strtonum(token, 0, UINT16_MAX, &errstr);
+        if (errstr != NULL)
           return -1;
 
         if (((struct sockaddr *)from)->sa_family == AF_INET) {
@@ -325,9 +325,8 @@ int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
         break;
       case 6:
         /* destination port */
-        errno = 0;
-        (void)strtonum(token, 0, UINT16_MAX, NULL);
-        if (errno)
+        (void)strtonum(token, 0, UINT16_MAX, &errstr);
+        if (errstr != NULL)
           return -1;
         goto done;
       default:
