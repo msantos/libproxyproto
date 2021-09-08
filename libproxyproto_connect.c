@@ -200,7 +200,7 @@ int write_v1(int fd, void *from, uint16_t port, const struct sockaddr *to,
     return -1;
   }
 
-  if (rv <= 0 || rv > (int)sizeof(buf))
+  if (rv <= 0 || (unsigned)rv > sizeof(buf))
     return -1;
 
   size = (uint16_t)rv;
