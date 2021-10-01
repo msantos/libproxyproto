@@ -314,7 +314,7 @@ int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
         continue;
       case 5:
         /* source port */
-        if (!isdigit(token[0]))
+        if (!isdigit((unsigned char)token[0]))
           return -1;
         port = (uint16_t)strtonum(token, 0, UINT16_MAX, &errstr);
         if (errstr != NULL)
@@ -328,7 +328,7 @@ int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
         break;
       case 6:
         /* destination port */
-        if (!isdigit(token[0]))
+        if (!isdigit((unsigned char)token[0]))
           return -1;
         (void)strtonum(token, 0, UINT16_MAX, &errstr);
         if (errstr != NULL)
