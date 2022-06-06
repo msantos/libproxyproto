@@ -38,12 +38,17 @@ enum {
 };
 
 void _init(void);
+static int (*sys_close)(int fd);
 static int (*sys_accept)(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 static int (*sys_accept4)(int sockfd, struct sockaddr *addr, socklen_t *addrlen,
                           int flags);
+static int (*sys_getpeername)(int sockfd, struct sockaddr *addr,
+                          socklen_t *addrlen);
 #pragma GCC diagnostic ignored "-Wpedantic"
+int close(int fd);
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
+int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 #pragma GCC diagnostic warning "-Wpedantic"
 static int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
                     socklen_t fromlen);
@@ -54,6 +59,10 @@ static const char v2sig[12] =
 static char *debug;
 static char *must_use_protocol_header;
 static int version = LIBPROXYPROTO_V1 | LIBPROXYPROTO_V2;
+
+// cache of sock addresses
+#define CACHE_MAX 1024
+struct sockaddr *addr_cache[CACHE_MAX+1] = {0};
 
 void _init(void) {
   const char *err;
@@ -72,8 +81,10 @@ void _init(void) {
   }
 
 #pragma GCC diagnostic ignored "-Wpedantic"
+  sys_close = dlsym(RTLD_NEXT, "close");
   sys_accept = dlsym(RTLD_NEXT, "accept");
   sys_accept4 = dlsym(RTLD_NEXT, "accept4");
+  sys_getpeername = dlsym(RTLD_NEXT, "getpeername");
 #pragma GCC diagnostic warning "-Wpedantic"
   err = dlerror();
 
@@ -81,18 +92,35 @@ void _init(void) {
     (void)fprintf(stderr, "libproxyproto:dlsym (accept):%s\n", err);
 }
 
+int close(int fd) {
+  int ret = sys_close(fd);
+
+  if (ret == 0 && addr_cache[fd] != NULL) {
+    if (debug)
+      (void)fprintf(stderr, "close(): freeing cache\n");
+    free(addr_cache[fd]);
+    addr_cache[fd] = NULL;
+  }
+
+  return ret;
+}
+
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
   int fd;
-  socklen_t oaddrlen = *addrlen;
+  struct sockaddr *tmp_addr;
+  socklen_t tmp_addrlen;
 
-  fd = sys_accept(sockfd, addr, addrlen);
+  tmp_addrlen = sizeof(struct sockaddr_storage);
+  tmp_addr = (struct sockaddr *)calloc(1, tmp_addrlen);
+
+  fd = sys_accept(sockfd, tmp_addr, &tmp_addrlen);
   if (fd < 0)
     return fd;
 
   if (debug)
     (void)fprintf(stderr, "accept: accepted connection\n");
 
-  if (read_evt(fd, addr, oaddrlen, *addrlen) <= 0) {
+  if (read_evt(fd, tmp_addr, sizeof(struct sockaddr_storage), tmp_addrlen) <= 0) {
     if (debug)
       (void)fprintf(stderr, "error: not proxy protocol\n");
 
@@ -108,27 +136,45 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
   }
 
 LIBPROXYPROTO_DONE:
+  /* copy the result to the caller */
+  if (addr && *addrlen) {
+    memcpy(addr, tmp_addr, *addrlen > tmp_addrlen ? tmp_addrlen : *addrlen);
+    *addrlen = tmp_addrlen;
+  }
+
+  /* store in the cache if possible */
+  if (fd < CACHE_MAX) {
+    if (addr_cache[fd] != NULL)
+      free(addr_cache[fd]);
+    addr_cache[fd] = tmp_addr;
+  } else {
+    free(tmp_addr);
+  }
+
   return fd;
 }
 
 int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
   int fd;
-  socklen_t oaddrlen = *addrlen;
   int nonblock;
+  struct sockaddr *tmp_addr;
+  socklen_t tmp_addrlen;
+
+  tmp_addrlen = sizeof(struct sockaddr_storage);
+  tmp_addr = (struct sockaddr *)calloc(1, tmp_addrlen);
 
   nonblock = flags & SOCK_NONBLOCK;
-
   if (nonblock)
     flags &= ~SOCK_NONBLOCK;
 
-  fd = sys_accept4(sockfd, addr, addrlen, flags);
+  fd = sys_accept4(sockfd, tmp_addr, &tmp_addrlen, flags);
   if (fd < 0)
     return fd;
 
   if (debug)
     (void)fprintf(stderr, "accept4: accepted connection\n");
 
-  if (read_evt(fd, addr, oaddrlen, *addrlen) <= 0) {
+  if (read_evt(fd, tmp_addr, sizeof(struct sockaddr_storage), tmp_addrlen) <= 0) {
     if (debug)
       (void)fprintf(stderr, "error: not proxy protocol\n");
 
@@ -150,7 +196,38 @@ LIBPROXYPROTO_DONE:
       return -1;
     }
   }
+
+  /* copy the result to the caller */
+  if (addr && *addrlen) {
+    memcpy(addr, tmp_addr, *addrlen > tmp_addrlen ? tmp_addrlen : *addrlen);
+    *addrlen = tmp_addrlen;
+  }
+
+  /* store in the cache if possible */
+  if (fd < CACHE_MAX) {
+    if (addr_cache[fd] != NULL)
+      free(addr_cache[fd]);
+    addr_cache[fd] = tmp_addr;
+  } else {
+    free(tmp_addr);
+  }
+
   return fd;
+}
+
+int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
+
+  if (addr_cache[sockfd] == NULL)
+    return sys_getpeername(sockfd, addr, addrlen);
+
+  memcpy(addr, addr_cache[sockfd], *addrlen);
+
+  if (debug)
+    (void)fprintf(stderr, "getpeername() replacing addr\n");
+
+  //FIXME: actually update addrlen??
+
+  return 0;
 }
 
 /* returns 0 if needs to poll, <0 upon error or >0 if it did the job */
