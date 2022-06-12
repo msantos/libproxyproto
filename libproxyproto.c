@@ -111,7 +111,9 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
   socklen_t tmp_addrlen;
 
   tmp_addrlen = sizeof(struct sockaddr_storage);
-  tmp_addr = (struct sockaddr *)calloc(1, tmp_addrlen);
+  tmp_addr = calloc(1, tmp_addrlen);
+  if (!tmp_addr)
+    return -1;
 
   fd = sys_accept(sockfd, tmp_addr, &tmp_addrlen);
   if (fd < 0)
@@ -161,7 +163,9 @@ int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
   socklen_t tmp_addrlen;
 
   tmp_addrlen = sizeof(struct sockaddr_storage);
-  tmp_addr = (struct sockaddr *)calloc(1, tmp_addrlen);
+  tmp_addr = calloc(1, tmp_addrlen);
+  if (!tmp_addr)
+    return -1;
 
   nonblock = flags & SOCK_NONBLOCK;
   if (nonblock)
