@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2021, Michael Santos <michael.santos@gmail.com>
+/* Copyright (c) 2019-2022, Michael Santos <michael.santos@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -43,7 +43,7 @@ static int (*sys_accept)(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 static int (*sys_accept4)(int sockfd, struct sockaddr *addr, socklen_t *addrlen,
                           int flags);
 static int (*sys_getpeername)(int sockfd, struct sockaddr *addr,
-                          socklen_t *addrlen);
+                              socklen_t *addrlen);
 #pragma GCC diagnostic ignored "-Wpedantic"
 int close(int fd);
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
@@ -62,7 +62,7 @@ static int version = LIBPROXYPROTO_V1 | LIBPROXYPROTO_V2;
 
 // cache of sock addresses
 #define CACHE_MAX 1024
-struct sockaddr *addr_cache[CACHE_MAX+1] = {0};
+struct sockaddr *addr_cache[CACHE_MAX + 1] = {0};
 
 void _init(void) {
   const char *err;
@@ -122,7 +122,8 @@ int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
   if (debug)
     (void)fprintf(stderr, "accept: accepted connection\n");
 
-  if (read_evt(fd, tmp_addr, sizeof(struct sockaddr_storage), tmp_addrlen) <= 0) {
+  if (read_evt(fd, tmp_addr, sizeof(struct sockaddr_storage), tmp_addrlen) <=
+      0) {
     if (debug)
       (void)fprintf(stderr, "error: not proxy protocol\n");
 
@@ -178,7 +179,8 @@ int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) {
   if (debug)
     (void)fprintf(stderr, "accept4: accepted connection\n");
 
-  if (read_evt(fd, tmp_addr, sizeof(struct sockaddr_storage), tmp_addrlen) <= 0) {
+  if (read_evt(fd, tmp_addr, sizeof(struct sockaddr_storage), tmp_addrlen) <=
+      0) {
     if (debug)
       (void)fprintf(stderr, "error: not proxy protocol\n");
 
@@ -229,7 +231,7 @@ int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
   if (debug)
     (void)fprintf(stderr, "getpeername() replacing addr\n");
 
-  //FIXME: actually update addrlen??
+  // FIXME: actually update addrlen??
 
   return 0;
 }
