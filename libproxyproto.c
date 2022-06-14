@@ -228,10 +228,18 @@ int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
 
   memcpy(addr, addr_cache[sockfd], *addrlen);
 
+  switch (addr_cache[sockfd]->sa_family) {
+  case AF_INET:
+      *addrlen = sizeof(struct sockaddr_in);
+    break;
+  case AF_INET6:
+      *addrlen = sizeof(struct sockaddr_in6);
+  default:
+    break;
+  }
+
   if (debug)
     (void)fprintf(stderr, "getpeername() replacing addr\n");
-
-  // FIXME: actually update addrlen??
 
   return 0;
 }
