@@ -1,6 +1,6 @@
 # NAME
 
-libproxyproto - LD\_PRELOAD library for adding support for proxy protocol v2
+libproxyproto - LD\_PRELOAD library for adding support for proxy protocol v1 and v2
 
 # SYNOPSIS
 
@@ -18,12 +18,12 @@ libproxyproto provides a method for applications to discover the original
 client IP adddress and port of proxied connections. The application must
 be dynamically linked.
 
-Intermediary proxies add a binary protocol header before the application
-data using the proxy protocol:
+Intermediary proxies insert the proxy protocol header before the application
+data:
 
     https://github.com/haproxy/haproxy/blob/master/doc/proxy-protocol.txt
 
-Both proxy proxy protocol v1 and v2 are supported.
+Proxy protocol v1 and v2 are supported.
 
 When the connection is `accept(2)`'ed, libproxyproto:
 
@@ -31,6 +31,7 @@ When the connection is `accept(2)`'ed, libproxyproto:
 * reads the proxy protocol header
 * sets the source IP address and port in the `struct sockaddr` argument of
   `accept(2)`
+* caches the IP address and intercepts calls to `getpeername(2)`
 
 libproxyproto\_connect does the same thing for calls to `connect(2)`
 and can be used for testing.
@@ -40,7 +41,7 @@ and can be used for testing.
 ## common
 
 `LIBPROXYPROTO_DEBUG`
-: Write errors to stderr (default: disabled).
+: Write errors to stderr (default: disabled)
 
 ## libproxyproto
 
@@ -84,6 +85,18 @@ LD_PRELOAD=libproxyproto.so nc -vvvv -k -l 9090
 LD_PRELOAD=libproxyproto_connect.so \
  LIBPROXYPROTO_ADDR="8.8.8.8" LIBPROXYPROTO_PORT="4321" \
  nc 127.0.0.1 9090
+```
+
+### IPv6
+
+```
+# run in a shell
+LD_PRELOAD=libproxyproto.so nc -vvvv -n -6 -k -l 9090
+
+# in another shell
+LD_PRELOAD=libproxyproto_connect.so \
+ LIBPROXYPROTO_ADDR="2001:4860:4860::8888" LIBPROXYPROTO_PORT="4321" \
+ nc -6 -v localhost 9090
 ```
 
 ## haproxy.conf
@@ -190,4 +203,4 @@ Packet rate estimate: ↓, ↑
 
 # SEE ALSO
 
-_connect_(2), _accept_(2)
+_connect_(2), _accept_(2), _getpeername_(2)
