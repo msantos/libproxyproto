@@ -1,27 +1,27 @@
 # NAME
 
-libproxyproto - LD\_PRELOAD library for adding support for proxy protocol v1 and v2
+libproxyproto - LD_PRELOAD library for adding support for proxy protocol v1 and v2
 
 # SYNOPSIS
 
 * server
 
-LD\_PRELOAD=libproxyproto.so *COMMAND* *ARG* *...*
+LD_PRELOAD=libproxyproto.so *COMMAND* *ARG* *...*
 
 * test client
 
-LD\_PRELOAD=libproxyproto\_connect.so *COMMAND* *ARG* *...*
+LD_PRELOAD=libproxyproto_connect.so *COMMAND* *ARG* *...*
 
 # DESCRIPTION
 
 libproxyproto provides a method for applications to discover the original
-client IP adddress and port of proxied connections. The application must
+client IP address and port of proxied connections. The application must
 be dynamically linked.
 
 Intermediary proxies insert the proxy protocol header before the application
 data:
 
-    https://github.com/haproxy/haproxy/blob/master/doc/proxy-protocol.txt
+https://github.com/haproxy/haproxy/blob/master/doc/proxy-protocol.txt
 
 Proxy protocol v1 and v2 are supported.
 
@@ -33,7 +33,7 @@ When the connection is `accept(2)`'ed, libproxyproto:
   `accept(2)`
 * caches the IP address and intercepts calls to `getpeername(2)`
 
-libproxyproto\_connect does the same thing for calls to `connect(2)`
+libproxyproto_connect does the same thing for calls to `connect(2)`
 and can be used for testing.
 
 # ENVIRONMENT VARIABLES
@@ -47,16 +47,18 @@ and can be used for testing.
 
 `LIBPROXYPROTO_MUST_USE_PROTOCOL_HEADER`
 : By default, connections without the proxy protocol header are
-  allowed. Enabling this option drops connections without a protocol header
-  (default: disabled).
+allowed. Enabling this option drops connections without a protocol header
+(default: disabled).
 
 `LIBPROXYPROTO_VERSION`
 : Supported proxy protocol version (default: 3):
 
-    0: proxy protocol disabled
-    1: proxy protocol v1 only
-    2: proxy protocol v2 only
-    3: proxy protocol v1 and v2
+```
+0: proxy protocol disabled
+1: proxy protocol v1 only
+2: proxy protocol v2 only
+3: proxy protocol v1 and v2
+```
 
 ## libproxyproto_connect
 
@@ -69,9 +71,11 @@ and can be used for testing.
 `LIBPROXYPROTO_VERSION`
 : Supported proxy protocol version (default: 2):
 
-    0: proxy protocol disabled
-    1: proxy protocol v1
-    2: proxy protocol v2
+```
+0: proxy protocol disabled
+1: proxy protocol v1
+2: proxy protocol v2
+```
 
 # EXAMPLES
 
@@ -142,20 +146,21 @@ tcpkali -c 50 -T 10s -e1 'PROXY TCP4 127.0.0.1 127.0.0.1 \{connection.uid} 25578
 
 To run:
 
-    erlc echo.erl
+```
+erlc echo.erl
 
-    # no proxy: run on port 1122
-    erl -noshell -eval "echo:start()"
+# no proxy: run on port 1122
+erl -noshell -eval "echo:start()"
 
-    # libproxyproto: run on port 1122
-    LD_PRELOAD=libproxyproto.so erl -noshell -eval "echo:start()"
+# libproxyproto: run on port 1122
+LD_PRELOAD=libproxyproto.so erl -noshell -eval "echo:start()"
 
-    # go-mmproxy: run on port 1123
-    erl -noshell -eval "echo:start(1123)"
-    sudo ./go-mmproxy -l 0.0.0.0:1122 -4 127.0.0.1:1123
+# go-mmproxy: run on port 1123
+erl -noshell -eval "echo:start(1123)"
+sudo ./go-mmproxy -l 0.0.0.0:1122 -4 127.0.0.1:1123
+```
 
-
-``` erlang
+```erlang
 -module(echo).
 
 -export([start/0, start/1]).
@@ -191,8 +196,8 @@ recv(S) ->
 
 ## Results
 
-|          | ⇅ Mbps | ↓ Mbps | ↑ Mbps |  ↓ pkt/s | ↑ pkt/s |
-|----------|---------|--------|--------|----------|---------|
+|               | ⇅ Mbps | ↓ Mbps   | ↑ Mbps   | ↓ pkt/s  | ↑ pkt/s  |
+|---------------|--------|----------|----------|----------|----------|
 | noproxy       | 98.238 | 2455.263 | 2456.626 | 229245.6 | 210847.5 |
 | libproxyproto | 94.974 | 2373.474 | 2375.247 | 221341.9 | 203862.9 |
 | go-mmproxy    | 76.567 | 1901.043 | 1927.293 | 163515.0 | 165415.9 |
@@ -203,4 +208,4 @@ Packet rate estimate: ↓, ↑
 
 # SEE ALSO
 
-_connect_(2), _accept_(2), _getpeername_(2)
+*connect*(2), *accept*(2), *getpeername*(2)
