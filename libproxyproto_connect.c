@@ -139,7 +139,7 @@ LIBPROXYPROTO_DONE:
   return fd;
 }
 
-int write_evt(int fd, void *from, uint16_t port, const struct sockaddr *to,
+static int write_evt(int fd, void *from, uint16_t port, const struct sockaddr *to,
               socklen_t tolen) {
   switch (version) {
   case 0:
@@ -153,7 +153,7 @@ int write_evt(int fd, void *from, uint16_t port, const struct sockaddr *to,
   }
 }
 
-int write_v1(int fd, void *from, uint16_t port, const struct sockaddr *to,
+static int write_v1(int fd, void *from, uint16_t port, const struct sockaddr *to,
              socklen_t tolen) {
   char buf[108] = {0};
   char saddr[INET6_ADDRSTRLEN] = {0};
@@ -211,7 +211,7 @@ int write_v1(int fd, void *from, uint16_t port, const struct sockaddr *to,
   return ret == size ? 1 : -1;
 }
 
-int write_v2(int fd, void *from, uint16_t port, const struct sockaddr *to,
+static int write_v2(int fd, void *from, uint16_t port, const struct sockaddr *to,
              socklen_t tolen) {
   union {
     struct {

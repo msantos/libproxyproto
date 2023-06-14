@@ -245,7 +245,7 @@ int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
 }
 
 /* returns 0 if needs to poll, <0 upon error or >0 if it did the job */
-int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
+static int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
              socklen_t fromlen) {
   union {
     struct {
