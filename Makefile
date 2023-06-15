@@ -11,6 +11,7 @@ endif
 
 libproxyproto:
 	$(CC) -Wall -Wextra -pedantic -D_GNU_SOURCE -nostartfiles -shared -fpic -fPIC \
+		-fvisibility=hidden \
 		-Wconversion -Wshadow \
 		-Wpointer-arith -Wcast-qual \
 		-Wstrict-prototypes -Wmissing-prototypes \
@@ -19,6 +20,7 @@ libproxyproto:
 
 libproxyproto_connect:
 	$(CC) -Wall -Wextra -pedantic -D_GNU_SOURCE -nostartfiles -shared -fpic -fPIC \
+		-fvisibility=hidden \
 		-Wconversion -Wshadow \
 		-Wpointer-arith -Wcast-qual \
 		-Wstrict-prototypes -Wmissing-prototypes \

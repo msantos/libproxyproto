@@ -33,7 +33,7 @@ void _init(void);
 static int (*sys_connect)(int sockfd, const struct sockaddr *addr,
                           socklen_t addrlen);
 #pragma GCC diagnostic ignored "-Wpedantic"
-int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+int __attribute__((visibility("default"))) connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 #pragma GCC diagnostic warning "-Wpedantic"
 static int write_evt(int fd, void *from, uint16_t port,
                      const struct sockaddr *to, socklen_t tolen);

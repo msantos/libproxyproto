@@ -45,10 +45,10 @@ static int (*sys_accept4)(int sockfd, struct sockaddr *addr, socklen_t *addrlen,
 static int (*sys_getpeername)(int sockfd, struct sockaddr *addr,
                               socklen_t *addrlen);
 #pragma GCC diagnostic ignored "-Wpedantic"
-int close(int fd);
-int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
-int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
-int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+int __attribute__((visibility("default"))) close(int fd);
+int __attribute__((visibility("default"))) accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+int __attribute__((visibility("default"))) accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
+int __attribute__((visibility("default"))) getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 #pragma GCC diagnostic warning "-Wpedantic"
 static int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
                     socklen_t fromlen);
@@ -62,7 +62,7 @@ static int version = LIBPROXYPROTO_V1 | LIBPROXYPROTO_V2;
 
 // cache of sock addresses
 #define CACHE_MAX 1024
-struct sockaddr *addr_cache[CACHE_MAX + 1] = {0};
+static struct sockaddr *addr_cache[CACHE_MAX + 1] = {0};
 
 void _init(void) {
   const char *err;
