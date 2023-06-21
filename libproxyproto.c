@@ -13,7 +13,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 #include <arpa/inet.h>
-#include <ctype.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <stdint.h>
@@ -405,7 +404,7 @@ static int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
         continue;
       case 5:
         /* source port */
-        if (!isdigit((unsigned char)token[0]))
+        if (token[0] < '1' || token[0] > '9')
           return -1;
         port = (uint16_t)strtonum(token, 0, UINT16_MAX, &errstr);
         if (errstr != NULL)
@@ -419,7 +418,7 @@ static int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
         break;
       case 6:
         /* destination port */
-        if (!isdigit((unsigned char)token[0]))
+        if (token[0] < '1' || token[0] > '9')
           return -1;
         (void)strtonum(token, 0, UINT16_MAX, &errstr);
         if (errstr != NULL)
