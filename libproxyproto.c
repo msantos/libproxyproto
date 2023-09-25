@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2022, Michael Santos <michael.santos@gmail.com>
+/* Copyright (c) 2019-2023, Michael Santos <michael.santos@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -45,9 +45,12 @@ static int (*sys_getpeername)(int sockfd, struct sockaddr *addr,
                               socklen_t *addrlen);
 #pragma GCC diagnostic ignored "-Wpedantic"
 int __attribute__((visibility("default"))) close(int fd);
-int __attribute__((visibility("default"))) accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
-int __attribute__((visibility("default"))) accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
-int __attribute__((visibility("default"))) getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+int __attribute__((visibility("default")))
+accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+int __attribute__((visibility("default")))
+accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
+int __attribute__((visibility("default")))
+getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 #pragma GCC diagnostic warning "-Wpedantic"
 static int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
                     socklen_t fromlen);
@@ -229,10 +232,10 @@ int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
 
   switch (addr_cache[sockfd]->sa_family) {
   case AF_INET:
-      *addrlen = sizeof(struct sockaddr_in);
+    *addrlen = sizeof(struct sockaddr_in);
     break;
   case AF_INET6:
-      *addrlen = sizeof(struct sockaddr_in6);
+    *addrlen = sizeof(struct sockaddr_in6);
   default:
     break;
   }
@@ -245,7 +248,7 @@ int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
 
 /* returns 0 if needs to poll, <0 upon error or >0 if it did the job */
 static int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
-             socklen_t fromlen) {
+                    socklen_t fromlen) {
   union {
     struct {
       char line[108];

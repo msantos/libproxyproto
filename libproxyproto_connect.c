@@ -1,4 +1,4 @@
-/* Copyright (c) 2019-2022, Michael Santos <michael.santos@gmail.com>
+/* Copyright (c) 2019-2023, Michael Santos <michael.santos@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -33,7 +33,8 @@ void _init(void);
 static int (*sys_connect)(int sockfd, const struct sockaddr *addr,
                           socklen_t addrlen);
 #pragma GCC diagnostic ignored "-Wpedantic"
-int __attribute__((visibility("default"))) connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+int __attribute__((visibility("default")))
+connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 #pragma GCC diagnostic warning "-Wpedantic"
 static int write_evt(int fd, void *from, uint16_t port,
                      const struct sockaddr *to, socklen_t tolen);
@@ -139,8 +140,8 @@ LIBPROXYPROTO_DONE:
   return fd;
 }
 
-static int write_evt(int fd, void *from, uint16_t port, const struct sockaddr *to,
-              socklen_t tolen) {
+static int write_evt(int fd, void *from, uint16_t port,
+                     const struct sockaddr *to, socklen_t tolen) {
   switch (version) {
   case 0:
     return 1;
@@ -153,8 +154,8 @@ static int write_evt(int fd, void *from, uint16_t port, const struct sockaddr *t
   }
 }
 
-static int write_v1(int fd, void *from, uint16_t port, const struct sockaddr *to,
-             socklen_t tolen) {
+static int write_v1(int fd, void *from, uint16_t port,
+                    const struct sockaddr *to, socklen_t tolen) {
   char buf[108] = {0};
   char saddr[INET6_ADDRSTRLEN] = {0};
   char daddr[INET6_ADDRSTRLEN] = {0};
@@ -211,8 +212,8 @@ static int write_v1(int fd, void *from, uint16_t port, const struct sockaddr *to
   return ret == size ? 1 : -1;
 }
 
-static int write_v2(int fd, void *from, uint16_t port, const struct sockaddr *to,
-             socklen_t tolen) {
+static int write_v2(int fd, void *from, uint16_t port,
+                    const struct sockaddr *to, socklen_t tolen) {
   union {
     struct {
       char line[108];
