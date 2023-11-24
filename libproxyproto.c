@@ -37,20 +37,24 @@ enum {
 };
 
 void _init(void);
-static int (*sys_close)(int fd);
 static int (*sys_accept)(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 static int (*sys_accept4)(int sockfd, struct sockaddr *addr, socklen_t *addrlen,
                           int flags);
+#ifdef GETPEERNAME_CACHE_ENABLED
+static int (*sys_close)(int fd);
 static int (*sys_getpeername)(int sockfd, struct sockaddr *addr,
                               socklen_t *addrlen);
+#endif
 #pragma GCC diagnostic ignored "-Wpedantic"
-int __attribute__((visibility("default"))) close(int fd);
 int __attribute__((visibility("default")))
 accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 int __attribute__((visibility("default")))
 accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags);
+#ifdef GETPEERNAME_CACHE_ENABLED
+int __attribute__((visibility("default"))) close(int fd);
 int __attribute__((visibility("default")))
 getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+#endif
 #pragma GCC diagnostic warning "-Wpedantic"
 static int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,
                     socklen_t fromlen);
@@ -62,9 +66,11 @@ static char *debug;
 static char *must_use_protocol_header;
 static int version = LIBPROXYPROTO_V1 | LIBPROXYPROTO_V2;
 
+#ifdef GETPEERNAME_CACHE_ENABLED
 // cache of sock addresses
 #define CACHE_MAX 1024
 static struct sockaddr *addr_cache[CACHE_MAX + 1] = {0};
+#endif
 
 void _init(void) {
   const char *err;
@@ -83,28 +89,17 @@ void _init(void) {
   }
 
 #pragma GCC diagnostic ignored "-Wpedantic"
-  sys_close = dlsym(RTLD_NEXT, "close");
   sys_accept = dlsym(RTLD_NEXT, "accept");
   sys_accept4 = dlsym(RTLD_NEXT, "accept4");
+#ifdef GETPEERNAME_CACHE_ENABLED
+  sys_close = dlsym(RTLD_NEXT, "close");
   sys_getpeername = dlsym(RTLD_NEXT, "getpeername");
+#endif
 #pragma GCC diagnostic warning "-Wpedantic"
   err = dlerror();
 
   if (err != NULL)
     (void)fprintf(stderr, "libproxyproto:dlsym (accept):%s\n", err);
-}
-
-int close(int fd) {
-  int ret = sys_close(fd);
-
-  if (ret == 0 && addr_cache[fd] != NULL) {
-    if (debug)
-      (void)fprintf(stderr, "close(): freeing cache\n");
-    free(addr_cache[fd]);
-    addr_cache[fd] = NULL;
-  }
-
-  return ret;
 }
 
 int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
@@ -147,6 +142,7 @@ LIBPROXYPROTO_DONE:
     *addrlen = tmp_addrlen;
   }
 
+#ifdef GETPEERNAME_CACHE_ENABLED
   /* store in the cache if possible */
   if (fd < CACHE_MAX) {
     if (addr_cache[fd] != NULL)
@@ -155,6 +151,7 @@ LIBPROXYPROTO_DONE:
   } else {
     free(tmp_addr);
   }
+#endif
 
   return fd;
 }
@@ -211,6 +208,7 @@ LIBPROXYPROTO_DONE:
     *addrlen = tmp_addrlen;
   }
 
+#ifdef GETPEERNAME_CACHE_ENABLED
   /* store in the cache if possible */
   if (fd < CACHE_MAX) {
     if (addr_cache[fd] != NULL)
@@ -219,8 +217,23 @@ LIBPROXYPROTO_DONE:
   } else {
     free(tmp_addr);
   }
+#endif
 
   return fd;
+}
+
+#ifdef GETPEERNAME_CACHE_ENABLED
+int close(int fd) {
+  int ret = sys_close(fd);
+
+  if (ret == 0 && addr_cache[fd] != NULL) {
+    if (debug)
+      (void)fprintf(stderr, "close(): freeing cache\n");
+    free(addr_cache[fd]);
+    addr_cache[fd] = NULL;
+  }
+
+  return ret;
 }
 
 int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
@@ -245,6 +258,7 @@ int getpeername(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
 
   return 0;
 }
+#endif
 
 /* returns 0 if needs to poll, <0 upon error or >0 if it did the job */
 static int read_evt(int fd, struct sockaddr *from, socklen_t ofromlen,

@@ -9,8 +9,11 @@ else
 	LIBPROXYPROTO_LDFLAGS ?= -ldl -Wl,-z,relro,-z,now -Wl,-z,noexecstack
 endif
 
+LIBPROXYPROTO_GETPEERNAME_CACHE ?= ENABLED
+
 libproxyproto:
 	$(CC) -Wall -Wextra -pedantic -D_GNU_SOURCE -nostartfiles -shared -fpic -fPIC \
+		-DGETPEERNAME_CACHE_$(LIBPROXYPROTO_GETPEERNAME_CACHE) \
 		-fvisibility=hidden \
 		-Wconversion -Wshadow \
 		-Wpointer-arith -Wcast-qual \

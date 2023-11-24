@@ -38,12 +38,20 @@ and can be used for testing.
 
 # ENVIRONMENT VARIABLES
 
-## common
+## Compile
+
+`LIBPROXYPROTO_GETPEERNAME_CACHE`
+: enable or disable support for the `getpeername(2)` (default: ENABLED,
+set to any value to disable)
+
+## Runtime
+
+### common
 
 `LIBPROXYPROTO_DEBUG`
 : Write errors to stderr (default: disabled)
 
-## libproxyproto
+### libproxyproto
 
 `LIBPROXYPROTO_MUST_USE_PROTOCOL_HEADER`
 : By default, connections without the proxy protocol header are
@@ -60,7 +68,7 @@ allowed. Enabling this option drops connections without a protocol header
 3: proxy protocol v1 and v2
 ```
 
-## libproxyproto_connect
+### libproxyproto_connect
 
 `LIBPROXYPROTO_ADDR`
 : Source IP address (default: 127.0.0.1)
